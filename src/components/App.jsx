@@ -2,6 +2,7 @@ import { Component } from 'react';
 import { ToastContainer } from 'react-toastify';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Loader from './Loader';
 import Modal from './Modal'
 import Searchbar from './Searchbar';
 import ImageGallery from './ImageGallery';
@@ -16,7 +17,35 @@ export default class App extends Component {
     page: 1,
     items: [],
     imageId: null,
+    error: null,
+    status: 'idle',
+    total: 0,
   }
+
+  componentDidUpdate(_, prevState) {
+        if (prevState.imageName !== this.state.imageName ||
+            prevState.page !== this.state.page) {
+
+          this.setState({
+            status: 'pending',
+          });
+
+          fetch(`https://pixabay.com/api/?q=${this.state.imageName}&page=${this.state.page}&key=27699103-8055a76317b5f85044be84666&image_type=photo&orientation=horizontal&per_page=12`)
+            .then(response => {
+              if (response.ok) {
+                return response.json();
+              }
+              return Promise.reject(
+                new Error(`There is no picture ${this.state.imageName}`)
+              )
+            })
+            .then(image => {
+              this.setState({ status: 'resolved' });
+              this.handleItems(image);
+            })
+            .catch(error => this.setState({ error, status: 'rejected' }));
+        };
+    };
 
   loadMore = () => {
     this.setState(prevState => ({
@@ -39,14 +68,16 @@ export default class App extends Component {
   };
 
   handleItems = image => {
-
-    if (!image.hits.length) {
+    const { hits, totalHits } = image;
+    
+    if (!hits.length) {
       toast.error('Sorry, there are no images matching your search query. Please try again.');
       return;
     }
 
-    this.setState(state => ({
-      items: [...state.items, ...image.hits]
+    this.setState(prevState => ({
+      items: [...prevState.items, ...hits],
+      total: totalHits,
     }));
   };
 
@@ -60,25 +91,26 @@ export default class App extends Component {
   };
 
   render() {
-    const { imageName, showModal, page, items } = this.state;
+    const { showModal, page, items, status, error, total } = this.state;
 
     return (
-      <div className='App'>
+      <div className='App'>  
 
         <Searchbar onSubmit={this.searchSubmitHandler} />
 
-        <ImageGallery
-          imageName={imageName}
-          page={page}
-          handleItems={this.handleItems}
-          onClick={this.clickOnImage}
-          imageList={items} />
+        {status === 'pending' && <Loader/>}
+        
+        {status === 'rejected' && toast.error(`${error.message}`)}
 
-        {showModal && (<Modal onClose={this.toggleModal}>
+        {status === 'resolved' && <ImageGallery onClick={this.clickOnImage} imageList={items} /> }
+
+        {page < Math.ceil(total / 12) && items.length > 0 && <Button onLoad={this.loadMore} />}
+
+        {showModal && (
+          <Modal onClose={this.toggleModal}>
           <img src={this.handleId().largeImageURL} alt={this.handleId().tags} />
-        </Modal>)}
-
-        {imageName && <Button onLoad={this.loadMore} />}
+          </Modal>
+        )}
           
         <ToastContainer autoClose={3000} />
 

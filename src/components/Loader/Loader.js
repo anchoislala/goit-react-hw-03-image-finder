@@ -1,4 +1,5 @@
 import { RotatingLines } from 'react-loader-spinner';
+import './Loader.styled.css'
 
 const Loader = () => {
     return (
@@ -10,7 +11,7 @@ const Loader = () => {
                 width="150"
                 visible={true}
             />
-        </div>
+         </div>
     );
 };
 
