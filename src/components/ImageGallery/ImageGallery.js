@@ -2,14 +2,7 @@ import PropTypes from 'prop-types';
 import ImageGalleryItem from '../ImageGalleryItem';
 import './ImageGallery.styled.css';
 
-const ImageGallery = ({ imageList, onClick }) => {
-
-    const imageClick = event => {
-        if (event.target.nodeName === 'IMG') {
-            onClick(Number(event.target.dataset.id));
-        };
-    };
-
+const ImageGallery = ({ imageList, imageClick }) => {
     return (
         <ul className="ImageGallery" onClick={imageClick}>
             <ImageGalleryItem images={imageList} />
@@ -19,7 +12,7 @@ const ImageGallery = ({ imageList, onClick }) => {
 
 ImageGallery.propTypes = {
     imageList: PropTypes.array.isRequired,
-    onClick: PropTypes.func.isRequired,
+    imageClick: PropTypes.func.isRequired,
 };
 
 export default ImageGallery;

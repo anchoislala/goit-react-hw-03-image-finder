@@ -7,6 +7,7 @@ import Modal from './Modal'
 import Searchbar from './Searchbar';
 import ImageGallery from './ImageGallery';
 import Button from './Button';
+import ServiceAPI from './ServiceAPI';
 import './App.styled.css'
 
 export default class App extends Component {
@@ -23,29 +24,24 @@ export default class App extends Component {
   }
 
   componentDidUpdate(_, prevState) {
-        if (prevState.imageName !== this.state.imageName ||
-            prevState.page !== this.state.page) {
+
+    const { imageName, page } = this.state;
+
+        if (prevState.imageName !== imageName || prevState.page !== page) {
 
           this.setState({
             status: 'pending',
           });
 
-          fetch(`https://pixabay.com/api/?q=${this.state.imageName}&page=${this.state.page}&key=27699103-8055a76317b5f85044be84666&image_type=photo&orientation=horizontal&per_page=12`)
-            .then(response => {
-              if (response.ok) {
-                return response.json();
-              }
-              return Promise.reject(
-                new Error(`There is no picture ${this.state.imageName}`)
-              )
-            })
+          ServiceAPI(imageName, page)
+            .then( (response) => response.data)
             .then(image => {
               this.setState({ status: 'resolved' });
               this.handleItems(image);
             })
             .catch(error => this.setState({ error, status: 'rejected' }));
-        };
     };
+  };
 
   loadMore = () => {
     this.setState(prevState => ({
@@ -85,10 +81,16 @@ export default class App extends Component {
     return this.state.items.find(img => img.id === this.state.imageId);
   };
 
-  clickOnImage = id => {
-    this.setState({ imageId: id });
-    this.toggleModal();
+  imageClick = (event) => {
+    const id = (Number(event.target.dataset.id));
+
+    if (event.target.nodeName === 'IMG') {
+      this.setState({ imageId: id });
+      this.toggleModal();
+    };
   };
+
+  per_page = 12;
 
   render() {
     const { showModal, page, items, status, error, total } = this.state;
@@ -102,9 +104,9 @@ export default class App extends Component {
         
         {status === 'rejected' && toast.error(`${error.message}`)}
 
-        {status === 'resolved' && <ImageGallery onClick={this.clickOnImage} imageList={items} /> }
+        {status === 'resolved' && <ImageGallery imageClick={this.imageClick} imageList={items} /> }
 
-        {page < Math.ceil(total / 12) && items.length > 0 && <Button onLoad={this.loadMore} />}
+        {page < Math.ceil(total / this.per_page) && items.length > 0 && <Button onLoad={this.loadMore} />}
 
         {showModal && (
           <Modal onClose={this.toggleModal}>
